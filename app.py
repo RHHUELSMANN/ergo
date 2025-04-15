@@ -3,28 +3,29 @@ import streamlit as st
 import pandas as pd
 from datetime import date, timedelta, datetime
 
-# Seiteneinstellungen inkl. Favicon
+# Seiteneinstellungen inkl. Titel & Icon
 st.set_page_config(
-    page_title="ERGO Tarifrechner",
-    page_icon="🧾",  # Fallback Emoji, kann durch logo ersetzt werden wenn lokal gehostet
+    page_title="Der Ergo Chuck",
+    page_icon="🦾",
     layout="centered"
 )
 
-# Logo anzeigen (zentriert)
+# Logo anzeigen
 st.image("SmallLogoBW_png.png", width=250)
 
 # Titel
-st.title("📊 ERGO Tarifrechner (mit Logo)")
+st.title("🦾 Der Ergo Chuck")
 
-# Eingabefelder
+# Eingabemaske
 name = st.text_input("👤 Kundenname")
 preis = st.number_input("💶 Reisepreis (€)", min_value=0.0)
 ziel = st.text_input("🌍 Reiseziel (IATA-Code)")
-alter = st.text_input("👥 Alter (z. B. 45 48)")
-von = st.date_input("📅 Reise von", value=date.today(), format="DD.MM.YYYY")
-bis = st.date_input("📅 Reise bis", value=date.today() + timedelta(days=7), format="DD.MM.YYYY")
+alter = st.text_input("👥 Alter der Reisenden (z. B. 45 48)")
+von = st.date_input("📅 Reisedatum von", value=date.today(), format="DD.MM.YYYY")
+bis = st.date_input("📅 Reisedatum bis", value=date.today() + timedelta(days=7), format="DD.MM.YYYY")
 
-if st.button("✅ Testdaten anzeigen"):
+if st.button("✅ Tarife anzeigen"):
+    st.success("✅ Eingabe verarbeitet:")
     st.write("Kunde:", name)
     st.write("Preis:", preis)
     st.write("Ziel:", ziel)
