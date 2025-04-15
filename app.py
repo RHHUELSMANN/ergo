@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 st.set_page_config(page_title="Der Ergo Chuck", page_icon="🦾", layout="centered")
 st.image("SmallLogoBW_png.png", width=250)
-st.title("🦾 Der Ergo Chuck – Gruppierte Tarife stabil")
+st.title("🦾 Der Ergo Chuck ")
 
 EUROPA_CODES = ["PMI", "FRA", "BER", "VIE", "ZRH", "LIS", "CDG", "AMS", "BCN", "ROM"]
 WELT_CODES = ["PUJ", "BKK", "JFK", "LAX", "DXB", "CUN", "MEX", "CPT", "SIN", "HND"]
