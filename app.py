@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 st.set_page_config(page_title="Der Ergo Chuck", page_icon="🦾", layout="centered")
 st.image("SmallLogoBW_png.png", width=250)
-st.title("🦾 Der Ergo Chuck – Gruppierte Tarife (fix für KV Einmal)")
+st.title("🦾 Der Ergo Chuck – Gruppierte Tarife (alle, inkl. KV-Fix)")
 
 EUROPA_CODES = ["PMI", "FRA", "BER", "VIE", "ZRH", "LIS", "CDG", "AMS", "BCN", "ROM"]
 WELT_CODES = ["PUJ", "BKK", "JFK", "LAX", "DXB", "CUN", "MEX", "CPT", "SIN", "HND"]
@@ -84,13 +84,31 @@ if st.button("✅ Gruppierte Tarife anzeigen"):
             return "–"
 
         rows = [
+            ["Reiserücktritt", "Einmal",
+             first(t["rrv_ew_mit"], t["rrv_ew_mit"]["Reisepreis bis"] >= preis, ["Prämie", "Tarifcode"]),
+             first(t["rrv_ew_ohne"], (t["rrv_ew_ohne"]["Reisepreis bis"] >= preis) & (t["rrv_ew_ohne"]["Altersgruppe"].str.strip() == altersgruppe), ["Prämie", "Tarifcode"])],
+            ["", "Jahres",
+             first(t["rrv_jw_mit"], (t["rrv_jw_mit"]["Reisepreis bis"] >= preis) & (t["rrv_jw_mit"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rrv_jw_mit"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"]),
+             first(t["rrv_jw_ohne"], (t["rrv_jw_ohne"]["Reisepreis bis"] >= preis) & (t["rrv_jw_ohne"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rrv_jw_ohne"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"])],
+            ["", "Sparfuchs",
+             first(t["rrv_jw_spf_mit"], (t["rrv_jw_spf_mit"]["Reisepreis bis"] >= preis) & (t["rrv_jw_spf_mit"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rrv_jw_spf_mit"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"]),
+             first(t["rrv_jw_spf_ohne"], (t["rrv_jw_spf_ohne"]["Reisepreis bis"] >= preis) & (t["rrv_jw_spf_ohne"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rrv_jw_spf_ohne"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"])],
             ["Reisekranken", "Einmal",
              kv_einmal("kv_ew_mit"),
              kv_einmal("kv_ew_ohne")],
+            ["", "Jahres",
+             first(t["kv_jw_mit"], (t["kv_jw_mit"]["Altersgruppe"].str.strip() == altersgruppe) & (t["kv_jw_mit"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"]),
+             first(t["kv_jw_ohne"], (t["kv_jw_ohne"]["Altersgruppe"].str.strip() == altersgruppe) & (t["kv_jw_ohne"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"])],
+            ["RundumSorglos", "Einmal",
+             first(t["rus_ew_mit"], (t["rus_ew_mit"]["Reisepreis bis"] >= preis) & (t["rus_ew_mit"]["Zielgebiet"].str.lower().str.strip() == zielgebiet.lower()), ["Prämie", "Tarifcode"]),
+             first(t["rus_ew_ohne"], (t["rus_ew_ohne"]["Reisepreis bis"] >= preis) & (t["rus_ew_ohne"]["Zielgebiet"].str.lower().str.strip() == zielgebiet.lower()) & (t["rus_ew_ohne"]["Altersgruppe"].str.strip() == altersgruppe), ["Prämie", "Tarifcode"])],
+            ["", "Jahres",
+             first(t["rus_jw_mit"], (t["rus_jw_mit"]["Reisepreis bis"] >= preis) & (t["rus_jw_mit"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rus_jw_mit"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"]),
+             first(t["rus_jw_ohne"], (t["rus_jw_ohne"]["Reisepreis bis"] >= preis) & (t["rus_jw_ohne"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rus_jw_ohne"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"])],
         ]
 
         df = pd.DataFrame(rows, columns=["Produktgruppe", "Tarif", "mit SB", "ohne SB"])
-        st.subheader("📊 Krankenversicherung (Einmal)")
+        st.subheader("📊 Gruppierte Übersicht")
         st.table(df)
 
     except Exception as e:
