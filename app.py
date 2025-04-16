@@ -66,8 +66,8 @@ def bereinige_export_daten(daten):
             export_daten[key] = value
     return export_daten
     
-saubere_daten = bereinige_export_daten(st.session_state["word_daten"])
-    export_doc("angebot.docx", dateiname, saubere_daten)
+    saubere_daten = bereinige_export_daten(st.session_state["word_daten"])
+    export_doc("angebot.docx", file_path, saubere_daten)
 
     def ersetze(text): return text if not text else text.format(**daten)
     for p in doc.paragraphs:
