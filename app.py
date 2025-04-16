@@ -26,12 +26,8 @@ def parse_datum(text):
         return None
 
 def ermittle_zielgebiet(code):
-    europa = ["PMI", "FRA", "BER", "VIE", "ZRH", "LIS", "CDG", "AMS", "BCN", "ROM"]
-    welt = ["PUJ", "BKK", "JFK", "LAX", "DXB", "CUN", "MEX", "CPT", "SIN", "HND"]
-    code = code.upper()
-    if code in europa: return "Europa"
-    if code in welt: return "Welt"
-    return "Unbekannt"
+    zielgebiet = st.radio("🌍 Zielgebiet", ["Europa", "Welt"], index=0)
+    return zielgebiet
 
 def ermittle_altersgruppe(alter):
     if alter <= 40: return "bis 40 Jahre"
