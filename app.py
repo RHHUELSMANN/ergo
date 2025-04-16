@@ -37,7 +37,7 @@ def parse_datum(text):
         return None
 
 def ermittle_zielgebiet(code):
-    zielgebiet = st.radio("🌍 Zielgebiet", ["Europa", "Welt"], index=0)
+    zielgebiet = st.radio("Zielgebiet", ["Europa", "Welt"], index=0)
     return zielgebiet
 
 def ermittle_altersgruppe(alter):
