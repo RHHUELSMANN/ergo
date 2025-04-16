@@ -123,7 +123,7 @@ def export_doc(template_path, output_path, daten):
 
 with st.form("eingabeformular"):
     name = st.text_input("👤 Kundenname")
-    ziel = st.text_input("🌍 Reiseziel (IATA-Code)")
+    zielgebiet = st.radio("🌍 Zielgebiet", ["Europa", "Welt"], index=0)
     preis = st.number_input("💶 Reisepreis (€)", min_value=0.0)
     alter_text = st.text_input("👥 Alter (z. B. 45 48)")
     von_raw = st.text_input("📅 Reise von (TTMM oder TT.MM.JJJJ)")
@@ -179,7 +179,7 @@ if submit:
             "Reisepreis": f"{preis:,.2f} €".replace(".", ","),
             "Anzahl": str(len(alter_liste)),
             "Alter": ", ".join(str(a) for a in alter_liste),
-            "Reiseziel": ziel.upper(),
+            "Reiseziel": zielgebiet,
             "Reiseruecktritt_Einmal_mit_SB": first(t["rrv_ew_mit"], t["rrv_ew_mit"]["Reisepreis bis"] >= preis, ["Prämie", "Tarifcode"]),
             "Reiseruecktritt_Einmal_ohne_SB": first(t["rrv_ew_ohne"], (t["rrv_ew_ohne"]["Reisepreis bis"] >= preis) & (t["rrv_ew_ohne"]["Altersgruppe"].str.strip() == altersgruppe), ["Prämie", "Tarifcode"]),
             "Reiseruecktritt_Jahres_mit_SB": first(t["rrv_jw_mit"], (t["rrv_jw_mit"]["Reisepreis bis"] >= preis) & (t["rrv_jw_mit"]["Altersgruppe"].str.strip() == altersgruppe) & (t["rrv_jw_mit"]["Personengruppe"].str.lower().str.strip() == personengruppe.lower()), ["Prämie", "Tarifcode"]),
