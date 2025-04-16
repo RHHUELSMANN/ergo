@@ -94,7 +94,16 @@ def export_doc(template_path, output_path, daten):
             bottom.set(qn('w:color'), '000000')
             pBdr.append(bottom)
             pPr.append(pBdr)
+        
+kleiner_text = "Diese Übersicht wurde automatisch vom Reisebüro Hülsmann"
 
+    for para in doc.paragraphs:
+        if kleiner_text in para.text:
+            for run in para.runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(120, 120, 120)
+                run.italic = True
+    
     for table in doc.tables:
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         for row in table.rows:
