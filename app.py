@@ -20,7 +20,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🦾 Der Ergo Chuck – Berechnung & Angebot")
+st.markdown(
+    "<h2 style='font-size:28px; color:#111;'>🦾 Der Ergo Chuck – Berechnung & Angebot</h2>",
+    unsafe_allow_html=True
+)
 
 def parse_datum(text):
     try:
