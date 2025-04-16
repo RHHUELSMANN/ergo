@@ -57,8 +57,17 @@ def first_hit(df):
         return df.sort_values(col[0]).iloc[0]
     return df.iloc[0]
 
-def export_doc(template_path, output_path, daten):
-    doc = Document(template_path)
+def bereinige_export_daten(daten):
+    export_daten = {}
+    for key, value in daten.items():
+        if isinstance(value, str) and "€" in value and "(" in value and ")" in value:
+            export_daten[key] = value.split(" ")[0] + " €"  # nur Betrag
+        else:
+            export_daten[key] = value
+    return export_daten
+    
+saubere_daten = bereinige_export_daten(st.session_state["word_daten"])
+    export_doc("angebot.docx", dateiname, saubere_daten)
 
     def ersetze(text): return text if not text else text.format(**daten)
     for p in doc.paragraphs:
