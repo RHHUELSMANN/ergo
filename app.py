@@ -15,7 +15,7 @@ st.image("SmallLogoBW_png.png", width=250)
 
 st.markdown(
     "<div style='font-size:18px; color:#555; font-style:italic; margin-bottom:1em;'>"
-    "🦾 Wenn Chuck Norris eine Reise plant, versichert sich das Zielland."
+    "Wenn Chuck Norris eine Reise plant, versichert sich das Zielland."
     "</div>",
     unsafe_allow_html=True
 )
