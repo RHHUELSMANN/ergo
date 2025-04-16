@@ -96,7 +96,6 @@ def export_doc(template_path, output_path, daten):
             pPr.append(pBdr)
         
     kleiner_text = "Diese Übersicht wurde automatisch vom Reisebüro Hülsmann"
-
     for para in doc.paragraphs:
         if kleiner_text in para.text:
             for run in para.runs:
