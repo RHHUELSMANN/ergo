@@ -133,13 +133,13 @@ def export_doc(template_path, output_path, daten):
     return output_path
 
 with st.form("eingabeformular"):
-    name = st.text_input("👤 Kundenname")
-    zielgebiet = st.radio("🌍 Zielgebiet", ["Europa", "Welt"], index=0)
-    preis = st.number_input("💶 Reisepreis (€)", min_value=0.0)
-    alter_text = st.text_input("👥 Alter (z. B. 45 48)")
-    von_raw = st.text_input("📅 Reise von (TTMM oder TT.MM.JJJJ)")
-    bis_raw = st.text_input("📅 Reise bis (TTMM oder TT.MM.JJJJ)")
-    submit = st.form_submit_button("✅ Gruppierte Tarife anzeigen")
+    name = st.text_input("Kundenname")
+    zielgebiet = st.radio("Zielgebiet", ["Europa", "Welt"], index=0)
+    preis = st.number_input("Reisepreis (€)", min_value=0.0)
+    alter_text = st.text_input("Alter (z. B. 45 48)")
+    von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
+    bis_raw = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
+    submit = st.form_submit_button("Tarife anzeigen")
 
 if submit:
     try:
