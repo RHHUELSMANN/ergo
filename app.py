@@ -142,7 +142,7 @@ if submit:
         max_alter = max(alter_liste)
         altersgruppe = ermittle_altersgruppe(max_alter)
         personengruppe = ermittle_personengruppe(alter_liste)
-        zielgebiet = ermittle_zielgebiet(ziel)
+        zielgebiet = st.radio("🌍 Zielgebiet", ["Europa", "Welt"], index=0)
         reisetage = berechne_reisetage(von, bis)
 
         excel = pd.ExcelFile("ergo.xlsx")
