@@ -103,11 +103,8 @@ def bereinige_export_daten(daten):
     return export_daten
 
 with st.form("eingabeformular"):
-    name = st.text_input("Kundenname")
-    zielgebiet = st.radio("Zielgebiet", ["Europa", "Welt"], index=0)
-    preis = st.number_input("Reisepreis (€)", min_value=0.0)
-    alter_text = st.text_input("Alter (z. B. 45 48)")
-
+    ...
+    # Geburtstagsfelder
     col1, col2, col3, col4 = st.columns(4)
     gb_eingaben = []
     with col1:
@@ -119,8 +116,18 @@ with st.form("eingabeformular"):
     with col4:
         gb_eingaben.append(st.text_input("", key="gb4", label_visibility="collapsed"))
 
+    # ➕ Hier direkt Alter berechnen
+    heute = date.today()
+    geburts_alter = []
+    for geb in gb_eingaben:
+        gebdat = parse_geburtstag(geb)
+        if gebdat:
+            alter = heute.year - gebdat.year - ((heute.month, heute.day) < (gebdat.month, gebdat.day))
+            geburts_alter.append(alter)
+
     if geburts_alter:
-        st.markdown(f"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>", unsafe_allow_html=True)
+        st.markdown(f\"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>\", unsafe_allow_html=True)
+        alter_text = \" \".join(str(a) for a in geburts_alter)
 
     von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
     bis_raw = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
