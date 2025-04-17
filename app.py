@@ -277,36 +277,26 @@ if frage_gpt.strip():
         if not fundstellen:
             st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
         else:
-            kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])  # max. 2 Auszüge
-       
-# Sichtbare Fundstellen als Expander
-if fundstellen:
-    with st.expander("📄 Gefundene Textstellen anzeigen"):
-        for i, (s, t) in enumerate(fundstellen[:3], 1):  # max. 3 anzeigen
-            st.markdown(f"**{i}. Seite {s}**")
-            st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
+            kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])
 
-system_prompt = (
-    "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
-    "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
-    "auf Grundlage der folgenden PDF-Auszüge.\n\n"
-    "Berücksichtige bei der Interpretation auch Begriffe mit ähnlicher Bedeutung. "
-    "Zum Beispiel:\n"
-    "- Selbstbeteiligung ≈ Selbstbehalt ≈ SB ≈ Eigenanteil\n"
-    "- Reiserücktritt ≈ Rücktritt ≈ Stornierung\n"
-    "- Krankheit ≈ Corona ≈ COVID ≈ Quarantäne\n\n"
-    "Wenn du keine ausreichende Information findest, sage bitte klar: "
-    "'Dazu liegt mir keine Information vor.'"
-)
+            with st.expander("📄 Gefundene Textstellen anzeigen"):
+                for i, (s, t) in enumerate(fundstellen[:3], 1):
+                    st.markdown(f"**{i}. Seite {s}**")
+                    st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
 
-response = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[
-     {"role": "system", "content": system_prompt},
-     {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
-    ],
-    temperature=0.3
-)
+            system_prompt = (
+                "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
+                "... (wie gehabt)"
+            )
 
-antwort = response.choices[0].message.content
-st.success(antwort)
+            response = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
+                ],
+                temperature=0.3
+            )
+            antwort = response.choices[0].message.content
+            st.success(antwort)
+
