@@ -44,12 +44,19 @@ def export_doc(template_path, output_path, daten):
                 run.font.color.rgb = RGBColor(120, 120, 120)
                 run.italic = True
 
-    for table in doc.tables:
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        for row in table.rows:
-            for cell in row.cells:
-                for para in cell.paragraphs:
-                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for row_index, row in enumerate(table.rows):
+    for col_index, cell in enumerate(row.cells):
+        for para in cell.paragraphs:
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Spaltenkopf (erste Zeile) oder Zeilenkopf (erste Spalte)
+            if row_index == 0 or col_index == 0:
+                for run in para.runs:
+                    run.bold = True
+                # Hintergrund hellgrau setzen
+                shading_elm = OxmlElement('w:shd')
+                shading_elm.set(qn('w:fill'), 'eeeeee')  # hellgrau
+                cell._tc.get_or_add_tcPr().append(shading_elm)
+
 
     ueberschriften = [
         "Welche Versicherungen sind wichtig",
