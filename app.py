@@ -270,6 +270,7 @@ if "word_daten" in st.session_state:
 st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
 
 frage_gpt = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
+
 if frage_gpt.strip():
     with st.spinner("Durchsuche PDF und frage GPT …"):
         fundstellen = pdf_suche("ergo_tarife.pdf", frage_gpt)
@@ -277,18 +278,30 @@ if frage_gpt.strip():
         if not fundstellen:
             st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
         else:
+            # Kontext aus max. 2 Fundstellen
             kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])
 
+            # 📄 Fundstellen anzeigen (max. 3) – NUR wenn vorhanden
             with st.expander("📄 Gefundene Textstellen anzeigen"):
                 for i, (s, t) in enumerate(fundstellen[:3], 1):
                     st.markdown(f"**{i}. Seite {s}**")
                     st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
 
+            # 🤖 GPT-System-Prompt mit Synonymerkennung
             system_prompt = (
                 "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
-                "... (wie gehabt)"
+                "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
+                "auf Grundlage der folgenden PDF-Auszüge.\n\n"
+                "Berücksichtige bei der Interpretation auch Begriffe mit ähnlicher Bedeutung. "
+                "Zum Beispiel:\n"
+                "- Selbstbeteiligung ≈ Selbstbehalt ≈ SB ≈ Eigenanteil\n"
+                "- Reiserücktritt ≈ Rücktritt ≈ Stornierung\n"
+                "- Krankheit ≈ Corona ≈ COVID ≈ Quarantäne\n\n"
+                "Wenn du keine ausreichende Information findest, sage bitte klar: "
+                "'Dazu liegt mir keine Information vor.'"
             )
 
+            # 🧠 GPT-Request mit OpenAI v1
             response = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
@@ -297,6 +310,6 @@ if frage_gpt.strip():
                 ],
                 temperature=0.3
             )
+
             antwort = response.choices[0].message.content
             st.success(antwort)
-
