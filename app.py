@@ -287,11 +287,17 @@ if fundstellen:
             st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
 
             system_prompt = (
-                "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
-                "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
-                "auf Grundlage der folgenden PDF-Auszüge. Wenn du es nicht sicher beantworten kannst, "
-                "sage bitte klar: 'Dazu liegt mir keine Information vor.'"
-            )
+    "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
+    "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
+    "auf Grundlage der folgenden PDF-Auszüge.\n\n"
+    "Berücksichtige bei der Interpretation auch Begriffe mit ähnlicher Bedeutung. "
+    "Zum Beispiel:\n"
+    "- Selbstbeteiligung ≈ Selbstbehalt ≈ SB ≈ Eigenanteil\n"
+    "- Reiserücktritt ≈ Rücktritt ≈ Stornierung\n"
+    "- Krankheit ≈ Corona ≈ COVID ≈ Quarantäne\n\n"
+    "Wenn du keine ausreichende Information findest, sage bitte klar: "
+    "'Dazu liegt mir keine Information vor.'"
+)
 
             response = client.chat.completions.create(
                 model="model="gpt-4-turbo",
