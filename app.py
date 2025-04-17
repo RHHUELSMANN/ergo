@@ -261,7 +261,7 @@ openai.api_key = st.secrets["OPENAI_API_KEY"]
 st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
 
 frage_gpt = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
-if frage_gpt:
+if frage_gpt.strip():
     with st.spinner("Durchsuche PDF und frage GPT …"):
         fundstellen = pdf_suche("ergo_tarife.pdf", frage_gpt)
 
