@@ -122,7 +122,7 @@ with st.form("eingabeformular"):
     # ─── Reisezeit und GPT-Frage ───
     von_raw   = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
     bis_raw   = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
-    frage     = st.text_input("GPT-Frage zur Versicherung", placeholder="z. B. Was ist bei Corona versichert?")
+    frage     = st.text_input("GPT-Frage zur Versicherung", placeholder="z. B. Was ist bei dasdsadsadasversichert?")
     submit    = st.form_submit_button("Tarife anzeigen")
 
 if submit:
