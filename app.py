@@ -4,7 +4,7 @@ import re
 import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
-import openai
+from openai import OpenAI
 
 def pdf_suche(pfad, suchbegriff):
     doc = fitz.open(pfad)
