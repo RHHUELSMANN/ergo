@@ -66,7 +66,7 @@ def parse_datum(text):
             return datetime.strptime(text.strip(), "%d%m%Y").date()
     except:
         return None
-
+        
 def ermittle_zielgebiet(code):
     zielgebiet = st.radio("Zielgebiet", ["Europa", "Welt"], index=0)
     return zielgebiet
