@@ -5,3 +5,4 @@ python-docx
 PyMuPDF
 matplotlib
 openai
+openai>=1.2.0
