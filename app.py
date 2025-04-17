@@ -1,6 +1,13 @@
 
 import os
 import re
+SYNONYME = {
+    "selbstbeteiligung": ["selbstbehalt", "eigenanteil", "sb"],
+    "reiserücktritt": ["rücktritt", "stornierung"],
+    "versicherung": ["schutz", "tarif", "deckung"],
+    "krankheit": ["corona", "covid", "erkrankung"],
+    "rundumsorglos": ["paket", "komplettschutz"]
+}
 import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
@@ -10,11 +17,14 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def pdf_suche(pfad, suchbegriff):
     doc = fitz.open(pfad)
     treffer = []
+    suchbegriffe = [suchbegriff.lower()] + SYNONYME.get(suchbegriff.lower(), [])
+    
     for seite in doc:
         text = seite.get_text()
-        if suchbegriff.lower() in text.lower():
+        text_lower = text.lower()
+        if any(sb in text_lower for sb in suchbegriffe):
             auszug = re.sub(r"\s+", " ", text.strip())
-            treffer.append((seite.number + 1, auszug[:1000]))  # Seite + Text
+            treffer.append((seite.number + 1, auszug[:1000]))  # max 1000 Zeichen
     return treffer
 
 def highlight(text, wort):
@@ -267,6 +277,14 @@ if frage_gpt.strip():
             st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
         else:
             kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])  # max. 2 Auszüge
+        import textwrap  # ganz oben, falls noch nicht vorhanden
+
+# Sichtbare Fundstellen als Expander
+if fundstellen:
+    with st.expander("📄 Gefundene Textstellen anzeigen"):
+        for i, (s, t) in enumerate(fundstellen[:3], 1):  # max. 3 anzeigen
+            st.markdown(f"**{i}. Seite {s}**")
+            st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
 
             system_prompt = (
                 "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
