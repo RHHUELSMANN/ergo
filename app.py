@@ -126,7 +126,7 @@ with st.form("eingabeformular"):
             geburts_alter.append(alter)
 
     if geburts_alter:
-        st.markdown(f\"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>\", unsafe_allow_html=True)
+        st.markdown(f"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>", unsafe_allow_html=True)
         alter_text = \" \".join(str(a) for a in geburts_alter)
 
     von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
