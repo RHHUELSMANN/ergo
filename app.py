@@ -277,7 +277,7 @@ if frage_gpt.strip():
                 "sage bitte klar: 'Dazu liegt mir keine Information vor.'"
             )
 
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -286,5 +286,5 @@ if frage_gpt.strip():
                 temperature=0.3
             )
 
-            antwort = response.choices[0].message["content"]
+            antwort = response.choices[0].message.content
             st.success(antwort)
