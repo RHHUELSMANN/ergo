@@ -1,14 +1,9 @@
-
 import os
 import re
 import textwrap
-SYNONYME = {
-    "selbstbeteiligung": ["selbstbehalt", "eigenanteil", "sb"],
-    "reiserücktritt": ["rücktritt", "stornierung"],
-    "versicherung": ["schutz", "tarif", "deckung"],
-    "krankheit": ["corona", "covid", "erkrankung"],
-    "rundumsorglos": ["paket", "komplettschutz"]
-}
+import difflib
+
+
 import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
@@ -267,49 +262,83 @@ if "word_daten" in st.session_state:
                 file_bytes = f.read()
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
 
+
+# PDF laden und Absätze vorbereiten
+@st.cache_data
+def lade_absätze_aus_pdf(pfad):
+    doc = fitz.open(pfad)
+    absatz_liste = []
+
+    for seite in doc:
+        text = seite.get_text()
+        nummer = seite.number + 1
+        absätze = [a.strip() for a in text.split("\n\n") if len(a.strip()) > 50]
+
+        for absatz in absätze:
+            absatz_liste.append({
+                "seite": nummer,
+                "text": absatz
+            })
+
+    return absatz_liste
+
+def suche_passende_absätze(frage, absätze, anzahl=3):
+    frage = frage.lower()
+    scored = []
+
+    for absatz in absätze:
+        text = absatz["text"].lower()
+        score = difflib.SequenceMatcher(None, frage, text).ratio()
+        if any(wort in text for wort in frage.split()):
+            score += 0.2  # Bonus für direkte Worttreffer
+        scored.append((score, absatz))
+
+    scored.sort(reverse=True, key=lambda x: x[0])
+    beste = [a for _, a in scored[:anzahl]]
+    return beste
+
+def frage_an_gpt(frage, absatz_liste):
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    relevante_abschnitte = suche_passende_absätze(frage, absatz_liste)
+
+    kontext = "\n\n".join([f"Seite {a['seite']}:\n{a['text']}" for a in relevante_abschnitte])
+
+    system_prompt = (
+        "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
+        "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
+        "auf Grundlage der folgenden PDF-Auszüge.\n\n"
+        "Berücksichtige bei der Interpretation auch Begriffe mit ähnlicher Bedeutung. "
+        "Zum Beispiel:\n"
+        "- Selbstbeteiligung ≈ Selbstbehalt ≈ SB ≈ Eigenanteil\n"
+        "- Reiserücktritt ≈ Rücktritt ≈ Stornierung\n"
+        "- Krankheit ≈ Corona ≈ COVID ≈ Quarantäne\n\n"
+        "Wenn du keine ausreichende Information findest, sage bitte klar: "
+        "'Dazu liegt mir keine Information vor.'"
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Frage: {frage}\n\nPDF-Auszüge:\n{kontext}"}
+        ],
+        temperature=0.3
+    )
+
+    return response.choices[0].message.content, relevante_abschnitte
+
+# Streamlit UI
 st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
 
-frage_gpt = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
+frage = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
+if frage.strip():
+    with st.spinner("Suche passende Textstellen und frage GPT …"):
+        absätze = lade_absätze_aus_pdf("ergo_tarife.pdf")
+        antwort, abschnitte = frage_an_gpt(frage, absätze)
 
-if frage_gpt.strip():
-    with st.spinner("Durchsuche PDF und frage GPT …"):
-        fundstellen = pdf_suche("ergo_tarife.pdf", frage_gpt)
+        with st.expander("📄 Verwendete PDF-Auszüge anzeigen"):
+            for i, a in enumerate(abschnitte, 1):
+                st.markdown(f"**{i}. Seite {a['seite']}**")
+                st.markdown(textwrap.shorten(a["text"], width=600, placeholder=" …"), unsafe_allow_html=True)
 
-        if not fundstellen:
-            st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
-        else:
-            # Kontext aus max. 2 Fundstellen
-            kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])
-
-            # 📄 Fundstellen anzeigen (max. 3) – NUR wenn vorhanden
-            with st.expander("📄 Gefundene Textstellen anzeigen"):
-                for i, (s, t) in enumerate(fundstellen[:3], 1):
-                    st.markdown(f"**{i}. Seite {s}**")
-                    st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
-
-            # 🤖 GPT-System-Prompt mit Synonymerkennung
-            system_prompt = (
-                "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
-                "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
-                "auf Grundlage der folgenden PDF-Auszüge.\n\n"
-                "Berücksichtige bei der Interpretation auch Begriffe mit ähnlicher Bedeutung. "
-                "Zum Beispiel:\n"
-                "- Selbstbeteiligung ≈ Selbstbehalt ≈ SB ≈ Eigenanteil\n"
-                "- Reiserücktritt ≈ Rücktritt ≈ Stornierung\n"
-                "- Krankheit ≈ Corona ≈ COVID ≈ Quarantäne\n\n"
-                "Wenn du keine ausreichende Information findest, sage bitte klar: "
-                "'Dazu liegt mir keine Information vor.'"
-            )
-
-            # 🧠 GPT-Request mit OpenAI v1
-            response = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
-                ],
-                temperature=0.3
-            )
-
-            antwort = response.choices[0].message.content
-            st.success(antwort)
+        st.success(antwort)
