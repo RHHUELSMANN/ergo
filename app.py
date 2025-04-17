@@ -256,8 +256,6 @@ if "word_daten" in st.session_state:
                 file_bytes = f.read()
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
 
-
-
 st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
 
 frage_gpt = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
