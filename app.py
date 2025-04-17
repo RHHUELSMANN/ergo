@@ -41,7 +41,7 @@ from docx.oxml.shared import qn
 from docx.oxml import OxmlElement
 
 st.set_page_config(page_title="Der Ergo Chuck", page_icon="🦾", layout="centered")
-st.image("SmallLogoBW_png.png", width=250)
+st.image("logo.png", width=250)
 
 st.markdown(
     "<div style='font-size:18px; color:#111; font-style:italic; margin-bottom:1em;'>"
