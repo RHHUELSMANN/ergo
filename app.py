@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
 from openai import OpenAI
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def pdf_suche(pfad, suchbegriff):
     doc = fitz.open(pfad)
