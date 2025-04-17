@@ -254,22 +254,37 @@ if "word_daten" in st.session_state:
                 file_bytes = f.read()
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
 
-st.subheader("📚 Versicherungswissen durchsuchen (PDF)")
+import openai
 
-frage = st.text_input("Was möchten Sie nachschlagen?", placeholder="z. B. Selbstbehalt, Ausland, Corona …")
-if frage:
-    with st.spinner("🔍 Durchsuche Tarif-PDF …"):
-        doc = fitz.open("ergo_tarife.pdf")
-        ergebnisse = []
-        for seite in doc:
-            text = seite.get_text()
-            if frage.lower() in text.lower():
-                auszug = text.strip().replace("\n", " ")
-                ergebnisse.append((seite.number + 1, auszug[:1000]))  # Seitenzahlen starten bei 1
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-    if not ergebnisse:
-        st.warning("🚫 Keine passenden Textstellen gefunden.")
-    else:
-        st.success(f"✅ {len(ergebnisse)} Fundstelle(n) gefunden:")
-        for i, (seite, text) in enumerate(ergebnisse, 1):
-            st.markdown(f"**{i}. Seite {seite}**<br>" + highlight(text, frage), unsafe_allow_html=True)
+st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
+
+frage_gpt = st.text_input("Welche Frage haben Sie zur Versicherung?", placeholder="z. B. Was ist bei Corona versichert?")
+if frage_gpt:
+    with st.spinner("Durchsuche PDF und frage GPT …"):
+        fundstellen = pdf_suche("ergo_tarife.pdf", frage_gpt)
+
+        if not fundstellen:
+            st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
+        else:
+            kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])  # max. 2 Auszüge
+
+            system_prompt = (
+                "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
+                "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
+                "auf Grundlage der folgenden PDF-Auszüge. Wenn du es nicht sicher beantworten kannst, "
+                "sage bitte klar: 'Dazu liegt mir keine Information vor.'"
+            )
+
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
+                ],
+                temperature=0.3
+            )
+
+            antwort = response.choices[0].message["content"]
+            st.success(antwort)
