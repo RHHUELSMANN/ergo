@@ -58,9 +58,9 @@ st.markdown(
 
 def parse_datum(text):
     try:
-        "." in text:
+        if "." in text:
             return datetime.strptime(text.strip(), "%d.%m.%Y").date()
-        ellen(text.strip()) == 4:
+        elif len(text.strip()) == 4:
             return date.today().replace(day=int(text[:2]), month=int(text[2:]))
         elif len(text.strip()) == 8:
             return datetime.strptime(text.strip(), "%d%m%Y").date()
