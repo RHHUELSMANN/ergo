@@ -286,7 +286,7 @@ if fundstellen:
             st.markdown(f"**{i}. Seite {s}**")
             st.markdown(textwrap.shorten(t, width=600, placeholder=" …"), unsafe_allow_html=True)
 
-            system_prompt = (
+system_prompt = (
     "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
     "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
     "auf Grundlage der folgenden PDF-Auszüge.\n\n"
@@ -299,14 +299,14 @@ if fundstellen:
     "'Dazu liegt mir keine Information vor.'"
 )
 
-            response = client.chat.completions.create(
-                model="model="gpt-4-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
+ response = client.chat.completions.create(
+    model="gpt-4-turbo",
+    messages=[
+    {"role": "system", "content": system_prompt},
+    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
                 ],
-                temperature=0.3
-            )
+    temperature=0.3
+)
 
-            antwort = response.choices[0].message.content
-            st.success(antwort)
+antwort = response.choices[0].message.content
+st.success(antwort)
