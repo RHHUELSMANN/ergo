@@ -257,7 +257,6 @@ if "word_daten" in st.session_state:
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
 
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 st.subheader("🤖 Beratung zur ERGO-Reiseversicherung")
 
