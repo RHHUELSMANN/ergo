@@ -1,6 +1,7 @@
 
 import os
 import re
+import textwrap
 SYNONYME = {
     "selbstbeteiligung": ["selbstbehalt", "eigenanteil", "sb"],
     "reiserücktritt": ["rücktritt", "stornierung"],
@@ -277,8 +278,7 @@ if frage_gpt.strip():
             st.warning("📄 Keine passenden Textstellen in der PDF gefunden.")
         else:
             kontext = "\n\n".join([f"Seite {s}:\n{t}" for s, t in fundstellen[:2]])  # max. 2 Auszüge
-        import textwrap  # ganz oben, falls noch nicht vorhanden
-
+       
 # Sichtbare Fundstellen als Expander
 if fundstellen:
     with st.expander("📄 Gefundene Textstellen anzeigen"):
@@ -299,12 +299,12 @@ system_prompt = (
     "'Dazu liegt mir keine Information vor.'"
 )
 
- response = client.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-4-turbo",
     messages=[
-    {"role": "system", "content": system_prompt},
-    {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
-                ],
+     {"role": "system", "content": system_prompt},
+     {"role": "user", "content": f"Frage: {frage_gpt}\n\nPDF-Auszüge:\n{kontext}"}
+    ],
     temperature=0.3
 )
 
