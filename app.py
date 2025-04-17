@@ -120,7 +120,7 @@ with st.form("eingabeformular"):
         gb_eingaben.append(st.text_input("", key="gb4", label_visibility="collapsed"))
 
     if geburts_alter:
-    st.markdown(f"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>", unsafe_allow_html=True)
+        st.markdown(f"<small>👥 Berechnete Alter: {', '.join(str(a) for a in geburts_alter)}</small>", unsafe_allow_html=True)
 
     von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
     bis_raw = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
