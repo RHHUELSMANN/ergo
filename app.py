@@ -4,6 +4,7 @@ import re
 import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
+import openai
 
 def pdf_suche(pfad, suchbegriff):
     doc = fitz.open(pfad)
@@ -254,7 +255,6 @@ if "word_daten" in st.session_state:
                 file_bytes = f.read()
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
 
-import openai
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
