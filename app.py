@@ -104,6 +104,7 @@ def bereinige_export_daten(daten):
 
 with st.form("eingabeformular"):
     ...
+     
     # Geburtstagsfelder
     col1, col2, col3, col4 = st.columns(4)
     gb_eingaben = []
@@ -132,6 +133,7 @@ with st.form("eingabeformular"):
     von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
     bis_raw = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
     submit = st.form_submit_button("Tarife anzeigen")
+ 
 
 def parse_geburtstag(text):
     try:
