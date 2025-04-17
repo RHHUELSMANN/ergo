@@ -1,4 +1,3 @@
-
 import os
 import re
 import textwrap
@@ -11,161 +10,233 @@ from openai import OpenAI
 from word_styling import export_doc
 from datetime import datetime, date
 
-# OpenAI-Client initialisieren
+# ——————————————————————————————————————————————
+# OpenAI-Client (API-Key in Streamlit-Secrets hinterlegen)
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+# ——————————————————————————————————————————————
 # Hilfsfunktionen
-def parse_datum(text):
+
+def parse_datum(text: str):
+    t = text.strip()
     try:
-        if "." in text:
-            return datetime.strptime(text.strip(), "%d.%m.%Y").date()
-        elif len(text.strip()) == 4:
-            return date.today().replace(day=int(text[:2]), month=int(text[2:]))
-        elif len(text.strip()) == 8:
-            return datetime.strptime(text.strip(), "%d%m%Y").date()
+        if "." in t and len(t.split(".")) == 3:
+            return datetime.strptime(t, "%d.%m.%Y").date()
+        if len(t) == 8 and t.isdigit():
+            return datetime.strptime(t, "%d%m%Y").date()
+        if len(t) == 4 and t.isdigit():
+            dd, mm = int(t[:2]), int(t[2:])
+            return date(date.today().year, mm, dd)
     except:
         return None
+    return None
 
-def parse_geburtstag(text):
+def parse_geburtstag(text: str):
+    t = text.strip().replace(".", "").replace(" ", "")
     try:
-        text = text.strip().replace(" ", "")
-        if len(text) == 6:
-            return datetime.strptime(text, "%d%m%y").date()
-        elif len(text) == 8:
-            return datetime.strptime(text, "%d%m%Y").date()
-        elif "." in text:
-            parts = text.split(".")
-            if len(parts[-1]) == 2:
-                return datetime.strptime(text, "%d.%m.%y").date()
-            return datetime.strptime(text, "%d.%m.%Y").date()
+        if len(t) == 6 and t.isdigit():
+            return datetime.strptime(t, "%d%m%y").date()
+        if len(t) == 8 and t.isdigit():
+            return datetime.strptime(t, "%d%m%Y").date()
     except:
         return None
+    return None
 
-def lade_absätze_aus_pdf(pfad):
+def berechne_reisetage(von: date, bis: date):
+    return max(1, (bis - von).days + 1)
+
+def ermittle_altersgruppe(a: int):
+    if a <= 40: return "bis 40 Jahre"
+    if a <= 64: return "41–64 Jahre"
+    return "ab 65 Jahre"
+
+def ermittle_personengruppe(lst: list):
+    if len(lst) == 1: return "Einzelperson"
+    if len(lst) == 2: return "Paar"
+    return "Familie"
+
+def first_hit(df: pd.DataFrame):
+    cols = [c for c in df.columns if "Reisepreis bis".lower() in c.lower()]
+    if cols:
+        return df.sort_values(cols[0]).iloc[0]
+    return df.iloc[0]
+
+def fmt(p, code, preis):
+    p = float(p)
+    raus = (p * preis) if p < 1 else p
+    return f"{raus:.2f} € ({code})"
+
+# PDF‑Suche / GPT‑Hilfe
+def lade_absätze_aus_pdf(pfad: str):
     doc = fitz.open(pfad)
-    absatz_liste = []
-    for seite in doc:
-        text = seite.get_text()
-        nummer = seite.number + 1
-        absätze = [a.strip() for a in text.split("\n\n") if len(a.strip()) > 50]
-        for absatz in absätze:
-            absatz_liste.append({"seite": nummer, "text": absatz})
-    return absatz_liste
+    absz = []
+    for page in doc:
+        txt = page.get_text()
+        seite = page.number + 1
+        for para in txt.split("\n\n"):
+            p = para.strip().replace("\n", " ")
+            if len(p) > 50:
+                absz.append({"seite": seite, "text": p})
+    return absz
 
-def suche_passende_absätze(frage, absätze, anzahl=3):
-    frage = frage.lower()
-    scored = []
-    for absatz in absätze:
-        text = absatz["text"].lower()
-        score = difflib.SequenceMatcher(None, frage, text).ratio()
-        if any(wort in text for wort in frage.split()):
-            score += 0.2
-        scored.append((score, absatz))
-    scored.sort(reverse=True, key=lambda x: x[0])
-    return [a for _, a in scored[:anzahl]]
+def suche_passende_absätze(frage: str, absätze: list, topk: int = 3):
+    f = frage.lower()
+    rated = []
+    for a in absätze:
+        score = difflib.SequenceMatcher(None, f, a["text"].lower()).ratio()
+        rated.append((score, a))
+    rated.sort(key=lambda x: x[0], reverse=True)
+    return [a for (_,a) in rated[:topk]]
 
-def frage_an_gpt(frage, absatz_liste):
-    relevante = suche_passende_absätze(frage, absatz_liste)
-    kontext = "\n\n".join([f"Seite {a['seite']}:\n{a['text']}" for a in relevante])
+def frage_an_gpt(frage: str, absätze: list):
+    top = suche_passende_absätze(frage, absätze)
+    kontext = "\n\n".join(f"Seite {a['seite']}:\n{a['text']}" for a in top)
     system_prompt = (
         "Du bist ein digitaler Versicherungsberater für Reisebüro Hülsmann. "
-        "Beantworte ausschließlich Fragen zu Reiseversicherungen auf Grundlage der "
-        "folgenden PDF-Auszüge. Wenn du es nicht beantworten kannst, sage: "
-        "'Dazu liegt mir keine Information vor.'"
+        "Beantworte ausschließlich Fragen zu Reiserücktritts-, Reisekranken- oder RundumSorglos-Versicherungen "
+        "auf Grundlage der PDF-Auszüge. Wenn keine Info, sage: 'Dazu liegt mir keine Information vor.'"
     )
-    response = client.chat.completions.create(
+    resp = client.chat.completions.create(
         model="gpt-4-turbo",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Frage: {frage}\n\nPDF-Auszüge:\n{kontext}"}
+            {"role": "user",   "content": f"Frage: {frage}\n\n{kontext}"}
         ],
         temperature=0.3
     )
-    return response.choices[0].message.content, relevante
+    return resp.choices[0].message.content, top
 
-# UI-Setup
+# ——————————————————————————————————————————————
+# Streamlit‑App
+
 st.set_page_config(page_title="Der Ergo Chuck", page_icon="🦾", layout="centered")
-st.image("logo.png", width=250)
-st.markdown("<h2 style='font-size:28px;'>Der Ergo Chuck – Berechnung & Angebot</h2>", unsafe_allow_html=True)
+st.image("logo.png", width=200)
+st.markdown("_Wenn Chuck Norris eine Reise plant, versichert sich das Zielland._")
+st.markdown("## Der Ergo Chuck – Berechnung | Angebot | Information")
 
-# Formular
-with st.form("eingabeformular"):
-    name = st.text_input("Kundenname")
-    zielgebiet = st.radio("Zielgebiet", ["Europa", "Welt"], index=0)
-    preis = st.number_input("Reisepreis (€)", min_value=0.0)
-    alter_text = st.text_input("Alter (z. B. 45 48)")
+# — Formular —
+with st.form("main_form"):
+    st.subheader("Berechnung & Tarifübersicht")
+    name       = st.text_input("Kundenname")
+    zielgebiet = st.radio("Zielgebiet", ["Europa","Welt"])
+    preis      = st.number_input("Reisepreis (€)", min_value=0.0)
 
-    # Geburtstagsfelder
-    cols = st.columns(4)
+    # → Geburtstagsfelder nebeneinander
+    col1,col2,col3,col4 = st.columns(4)
     geb_eingaben = []
-    for idx, col in enumerate(cols):
-        with col:
-            geb_eingaben.append(st.text_input("", key=f"gb{idx}", label_visibility="collapsed", placeholder=f"Geb. {idx+1}"))
+    geb_eingaben.append(col1.text_input("", key="gb1", placeholder="Geb. 1", label_visibility="collapsed"))
+    geb_eingaben.append(col2.text_input("", key="gb2", placeholder="Geb. 2", label_visibility="collapsed"))
+    geb_eingaben.append(col3.text_input("", key="gb3", placeholder="Geb. 3", label_visibility="collapsed"))
+    geb_eingaben.append(col4.text_input("", key="gb4", placeholder="Geb. 4", label_visibility="collapsed"))
 
-    # Altersberechnung
+    # → Alter berechnen
     heute = date.today()
-    geburts_alter = []
-    for geb in geb_eingaben:
-        d = parse_geburtstag(geb)
+    alters = []
+    for t in geb_eingaben:
+        d = parse_geburtstag(t)
         if d:
-            geburts_alter.append(heute.year - d.year - ((heute.month, heute.day) < (d.month, d.day)))
-    if geburts_alter:
-        st.markdown(f"<small style='color:gray;'>👥 Berechnete Alter: {', '.join(map(str, geburts_alter))}</small>", unsafe_allow_html=True)
-        alter_text = " ".join(map(str, geburts_alter))
+            age = heute.year - d.year - ((heute.month,heute.day) < (d.month,d.day))
+            alters.append(age)
+    if alters:
+        alter_text = " ".join(map(str,alters))
+        st.markdown(
+            f"<small style='color:gray;'>👥 Berechnete Alter: {', '.join(map(str,alters))}</small>",
+            unsafe_allow_html=True
+        )
+    else:
+        alter_text = st.text_input("Alter (z. B. 45 48)")
 
-    von_raw = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
-    bis_raw = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
-    submit = st.form_submit_button("Tarife anzeigen")
+    von_raw   = st.text_input("Reise von (TTMM oder TT.MM.JJJJ)")
+    bis_raw   = st.text_input("Reise bis (TTMM oder TT.MM.JJJJ)")
+    frage_gpt  = st.text_input("GPT‑Frage zur Versicherung", placeholder="z. B. Corona")
+    submit    = st.form_submit_button("Tarife anzeigen")
 
-# Nach Absenden
 if submit:
-    # Datum parsen
-    von = parse_datum(von_raw)
-    bis = parse_datum(bis_raw)
+    von = parse_datum(von_raw); bis = parse_datum(bis_raw)
     if not von or not bis:
         st.error("❌ Bitte gültige Datumswerte eingeben.")
         st.stop()
 
-    # Tariftabelle (Beispielwerte)
-    df = pd.DataFrame([
-        ["Reiserücktritt", "Einmal", "✓", "✓"],
-        ["", "Jahres", "✓", "✓"],
-        ["", "Sparfuchs", "✓", "✓"],
-        ["Reisekranken", "Einmal", "✓", "✓"],
-        ["", "Jahres", "✓", "✓"],
-        ["RundumSorglos", "Einmal", "✓", "✓"],
-        ["", "Jahres", "✓", "✓"],
-    ], columns=["Produktgruppe", "Tarif", "mit SB", "ohne SB"])
+    # Excel & Tariftabelle
+    xls = pd.ExcelFile("ergo.xlsx")
+    mapping = {
+        "rrv_ew_mit":"rrv-ev-mit","rrv_ew_ohne":"rrv-ev-ohne",
+        "rrv_jw_mit":"rrv-jv-mit","rrv_jw_ohne":"rrv-jv-ohne",
+        "kv_ew_mit":"kv-ev-mit","kv_ew_ohne":"kv-ev-ohne",
+        "kv_jw_mit":"kv-jv-mit","kv_jw_ohne":"kv-jv-ohne",
+        "rus_ew_mit":"rus-ev-mit","rus_ew_ohne":"rus-ev-ohne",
+        "rus_jw_mit":"rus-jv-mit","rus_jw_ohne":"rus-jv-ohne"
+    }
+    sheets = {k: xls.parse(v) for k,v in mapping.items()}
+
+    tage   = berechne_reisetage(von,bis)
+    liste_alt = [int(a) for a in alter_text.split()] if alter_text else []
+    max_alt   = max(liste_alt) if liste_alt else 0
+    ag = ermittle_altersgruppe(max_alt)
+    pg = ermittle_personengruppe(liste_alt)
+
+    rows = [
+        ["Reiserücktritt","Einmal",
+         fmt(*first_hit(sheets["rrv_ew_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["rrv_ew_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["","Jahres",
+         fmt(*first_hit(sheets["rrv_jw_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["rrv_jw_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["","Sparfuchs",
+         fmt(*first_hit(sheets["rrv_jw_spf_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["rrv_jw_spf_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["Reisekranken","Einmal",
+         fmt(*first_hit(sheets["kv_ew_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["kv_ew_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["","Jahres",
+         fmt(*first_hit(sheets["kv_jw_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["kv_jw_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["RundumSorglos","Einmal",
+         fmt(*first_hit(sheets["rus_ew_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["rus_ew_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+        ["","Jahres",
+         fmt(*first_hit(sheets["rus_jw_mit"])[["Prämie","Tarifcode"]],preis),
+         fmt(*first_hit(sheets["rus_jw_ohne"])[["Prämie","Tarifcode"]],preis)
+        ],
+    ]
+    df = pd.DataFrame(rows, columns=["Produktgruppe","Tarif","mit SB","ohne SB"])
+
     st.subheader("📊 Gruppierte Tarifübersicht")
     st.table(df)
 
-    # Word-Angebot
+    # Word‑Export
     daten = {
         "Kundenname": name,
         "Reisedatum": f"{von:%d.%m.%Y} – {bis:%d.%m.%Y}",
-        "Reisepreis": f"{preis:,.2f} €".replace(".", ","),
+        "Reisepreis": f"{preis:,.2f} €".replace(".",","),
         "Alter": alter_text,
         "Reiseziel": zielgebiet
     }
     st.session_state["word_daten"] = daten
-    st.subheader("📄 Word-Angebot")
-    if st.button("📄 Word-Angebot erstellen"):
+    st.subheader("📄 Word‑Angebot")
+    if st.button("📄 Word‑Angebot erstellen"):
         if not os.path.exists("angebot.docx"):
             st.warning("⚠️ Vorlage 'angebot.docx' fehlt!")
         else:
-            file_path = "angebot_fertig_streamlit.docx"
-            export_doc("angebot.docx", file_path, daten)
-            with open(file_path, "rb") as f:
-                btn_bytes = f.read()
-            st.download_button("📥 Angebot herunterladen", btn_bytes, file_name=file_path)
+            fp = "angebot_fertig_streamlit.docx"
+            export_doc("angebot.docx", fp, daten)
+            with open(fp,"rb") as f: data = f.read()
+            st.download_button("📥 Angebot herunterladen", data, file_name=fp)
 
-    # GPT-Block
-    frage = st.text_input("Frage an Versicherung (GPT)", placeholder="z. B. Was ist bei Corona versichert?")
-    if frage:
-        absätze = lade_absätze_aus_pdf("ergo_tarife.pdf")
-        antwort, fundstellen = frage_an_gpt(frage, absätze)
-        with st.expander("📄 Verwendete Textstellen aus PDF"):
-            for i, a in enumerate(fundstellen, 1):
+    # GPT‑Block
+    if frage_gpt:
+        absz = lade_absätze_aus_pdf("ergo_tarife.pdf")
+        antwort, fund = frage_an_gpt(frage_gpt, absz)
+        with st.expander("📄 Gefundene PDF‑Textstellen"):
+            for i,a in enumerate(fund,1):
                 st.markdown(f"**{i}. Seite {a['seite']}**")
-                st.markdown(textwrap.shorten(a["text"], width=600, placeholder=" …"), unsafe_allow_html=True)
+                st.markdown(textwrap.shorten(a["text"],width=600,placeholder=" …"),
+                            unsafe_allow_html=True)
         st.success(antwort)
+
