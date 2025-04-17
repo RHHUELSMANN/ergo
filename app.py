@@ -81,7 +81,7 @@ def frage_an_gpt(frage, absatz_liste):
 # Streamlit UI aufsetzen
 st.set_page_config(page_title="Der Ergo Chuck", page_icon="🦾", layout="centered")
 st.image("logo.png", width=250)
-st.markdown("<h2 style='font-size:28px;'>Der Ergo Chuck – Berechnung - Angebot - Information</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='font-size:28px;'>Der Ergo Chuck // Berechnung - Angebot - Information</h2>", unsafe_allow_html=True)
 
 # Eingabeformular
 with st.form("eingabeformular"):
