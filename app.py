@@ -1,7 +1,23 @@
 
 import os
+import re
 import streamlit as st
 import pandas as pd
+import fitz  # PyMuPDF
+
+def pdf_suche(pfad, suchbegriff):
+    doc = fitz.open(pfad)
+    treffer = []
+    for seite in doc:
+        text = seite.get_text()
+        if suchbegriff.lower() in text.lower():
+            auszug = re.sub(r"\s+", " ", text.strip())
+            treffer.append((seite.number + 1, auszug[:1000]))  # Seite + Text
+    return treffer
+
+def highlight(text, wort):
+    return re.sub(f"(?i)({re.escape(wort)})", r"<mark>\1</mark>", text)
+
 from datetime import datetime, date
 from docx import Document
 from docx.shared import Pt, RGBColor
@@ -235,3 +251,23 @@ if "word_daten" in st.session_state:
             with open(file_path, "rb") as f:
                 file_bytes = f.read()
             st.download_button("📥 Angebot herunterladen", file_bytes, file_name=file_path)
+
+st.subheader("📚 Versicherungswissen durchsuchen (PDF)")
+
+frage = st.text_input("Was möchten Sie nachschlagen?", placeholder="z. B. Selbstbehalt, Ausland, Corona …")
+if frage:
+    with st.spinner("🔍 Durchsuche Tarif-PDF …"):
+        doc = fitz.open("ergo_tarife.pdf")
+        ergebnisse = []
+        for seite in doc:
+            text = seite.get_text()
+            if frage.lower() in text.lower():
+                auszug = text.strip().replace("\n", " ")
+                ergebnisse.append((seite.number + 1, auszug[:1000]))  # Seitenzahlen starten bei 1
+
+    if not ergebnisse:
+        st.warning("🚫 Keine passenden Textstellen gefunden.")
+    else:
+        st.success(f"✅ {len(ergebnisse)} Fundstelle(n) gefunden:")
+        for i, (seite, text) in enumerate(ergebnisse, 1):
+            st.markdown(f"**{i}. Seite {seite}**<br>" + highlight(text, frage), unsafe_allow_html=True)
