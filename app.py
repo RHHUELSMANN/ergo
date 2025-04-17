@@ -16,8 +16,10 @@ def pdf_suche(pfad, suchbegriff):
     return treffer
 
 def highlight(text, wort):
-    return re.sub(f"(?i)({re.escape(wort)})", r"<mark>\1</mark>", text)
-
+    clean_text = re.sub(r"[�•⍰]", " ", text)
+    pattern = re.compile(f"(?i)({re.escape(wort)})")
+    return pattern.sub(r"<mark>\1</mark>", clean_text)
+    
 from datetime import datetime, date
 from docx import Document
 from docx.shared import Pt, RGBColor
