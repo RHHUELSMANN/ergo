@@ -162,6 +162,7 @@ if submit:
     mapping = {
         "rrv_ew_mit":"rrv-ev-mit","rrv_ew_ohne":"rrv-ev-ohne",
         "rrv_jw_mit":"rrv-jv-mit","rrv_jw_ohne":"rrv-jv-ohne",
+        "rrv_jw_spf_mit":"rrv-jv-spf-mit","rrv_jw_spf_ohne":"rrv-jv-spf-ohne",
         "kv_ew_mit":"kv-ev-mit","kv_ew_ohne":"kv-ev-ohne",
         "kv_jw_mit":"kv-jv-mit","kv_jw_ohne":"kv-jv-ohne",
         "rus_ew_mit":"rus-ev-mit","rus_ew_ohne":"rus-ev-ohne",
