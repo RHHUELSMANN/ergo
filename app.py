@@ -55,7 +55,7 @@ def tarif(df, bedingungen):
 blatt = {key: excel_data.parse(key) for key in excel_data.sheet_names}
 
 st.image("logo.png", width=200)
-st.markdown("<h2 style='font-size:22pt;'>Berechnung – Angebot – Information</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='font-size:22pt;'>Reiseversicherung // Berechnung und Angebot</h2>", unsafe_allow_html=True)
 st.write("")
 
 reise_von = st.text_input("Reisedatum von")
