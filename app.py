@@ -16,7 +16,12 @@ def berechne_praemie(p, preis=None, tage=None):
     return round(p, 2)
 
 def berechne_tage(von, bis):
-    for fmt in ("%d%m%Y", "%d.%m.%Y"):
+    default_year = "2025"
+    if len(von) <= 4:
+        von = von + default_year
+    if len(bis) <= 4:
+        bis = bis + default_year
+    for fmt in ("%d%m%Y", "%d.%m.%Y", "%d%m", "%d.%m."):
         try:
             d1 = datetime.strptime(von, fmt)
             d2 = datetime.strptime(bis, fmt)
@@ -52,8 +57,8 @@ st.image("logo.png", width=200)
 st.markdown("<h2 style='font-size:22pt;'>Reiseversicherung // Berechnung und Angebot</h2>", unsafe_allow_html=True)
 st.write("")
 
-reise_von = st.text_input("Reisedatum von (TTMMJJJJ)")
-reise_bis = st.text_input("Reisedatum bis (TTMMJJJJ)")
+reise_von = st.text_input("Reisedatum von")
+reise_bis = st.text_input("Reisedatum bis")
 raw_reisepreis = st.text_input("Reisepreis").replace(",", ".")
 alter_input = st.text_input("Alter")
 
@@ -61,13 +66,17 @@ zielgebiet = st.selectbox("Zielgebiet", ["Europa", "Welt"])
 name = st.text_input("Name (für Word-Angebot)", key="word_export_name")
 
 def parse_geburtsdatum(text):
-    try:
-        geb = datetime.strptime(text.strip(), "%d%m%Y")
-        heute = datetime.today()
-        alter = heute.year - geb.year - ((heute.month, heute.day) < (geb.month, geb.day))
-        return str(alter)
-    except:
-        return "-"
+    heute = datetime.today()
+    for fmt in ("%d%m%Y", "%d.%m.%Y", "%d%m%y", "%d.%m.%y"):
+        try:
+            geb = datetime.strptime(text.strip(), fmt)
+            if geb > heute:
+                geb = geb.replace(year=geb.year - 100)
+            alter = heute.year - geb.year - ((heute.month, heute.day) < (geb.month, geb.day))
+            return str(alter)
+        except:
+            continue
+    return "-"
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
