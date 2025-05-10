@@ -1,5 +1,6 @@
 
 import streamlit as st
+st.set_page_config(page_title="Ergo Berechnung & Angebot", page_icon="🧾")
 import pandas as pd
 from datetime import datetime
 from word_export import export_word_dokument
