@@ -25,7 +25,7 @@ def export_doc(template_path, output_path, daten):
             neuer_text = para.text.strip()
             para.clear()  # entfernt alle Runs und Formatierungen
             run = para.add_run(neuer_text)
-            run.font.size = Pt(18)
+            run.font.size = Pt(16)
             run.font.color.rgb = RGBColor(0, 0, 0)
             run.bold = True
 
