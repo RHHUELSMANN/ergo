@@ -11,6 +11,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.shared import qn
 from docx.oxml import OxmlElement
 from docx.text.paragraph import Paragraph
+from pathlib import Path
 
 
 FONT = "Calibri"
@@ -252,7 +253,10 @@ def _style_notes(para, headings):
 
 
 def export_doc(template_path, output_path, daten):
-    doc = Document(template_path)
+    template = Path(template_path)
+    if not template.is_absolute():
+        template = Path(__file__).resolve().parent / template
+    doc = Document(str(template))
     # Auch geerbte Titellinien der Vorlage entfernen.
     for style_name in ("Normal", "Title", "Heading 1", "Heading 2"):
         style = doc.styles[style_name]
