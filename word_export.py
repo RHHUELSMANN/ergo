@@ -11,7 +11,7 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "angebot.docx"
 def export_doc(template_path, output_path, daten):
     """Replace placeholders while retaining paragraph, table and run styling."""
     doc = Document(str(template_path))
-    pattern = re.compile(r"\\{(" + "|".join(re.escape(k) for k in sorted(daten, key=len, reverse=True)) + r")\\}")
+    pattern = re.compile(r"\{(" + "|".join(re.escape(k) for k in sorted(daten, key=len, reverse=True)) + r")\}") if daten else None
 
     def replace_paragraph(paragraph):
         runs = paragraph.runs
