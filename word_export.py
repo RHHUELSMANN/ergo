@@ -11,7 +11,10 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "angebot.docx"
 def export_doc(template_path, output_path, daten):
     """Replace placeholders while retaining paragraph, table and run styling."""
     doc = Document(str(template_path))
-    pattern = re.compile(r"\{(" + "|".join(re.escape(k) for k in sorted(daten, key=len, reverse=True)) + r")\}") if daten else None
+    if not daten:
+        doc.save(str(output_path))
+        return str(output_path)
+    pattern = re.compile(r"\{(" + "|".join(re.escape(k) for k in sorted(daten, key=len, reverse=True)) + r")\}")
 
     def replace_paragraph(paragraph):
         runs = paragraph.runs
@@ -91,12 +94,12 @@ def export_word_dokument(name, reisepreis, reise_von, reise_bis, zielgebiet, alt
         "RundumSorglos_Jahres_ohne_SB": euro_wert(rus_jv_ohne),
     }
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        angebot_path = export_doc(TEMPLATE_PATH, tmp.name, daten)
-        with open(angebot_path, "rb") as f:
-            st.download_button(
-                label="📄 Word-Datei herunterladen",
-                data=f,
-                file_name=f"angebot_{name}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+    with tempfile.TemporaryDirectory() as temp_dir:
+        angebot_path = export_doc(TEMPLATE_PATH, Path(temp_dir) / "angebot.docx", daten)
+        angebot_bytes = Path(angebot_path).read_bytes()
+    st.download_button(
+        label="📄 Word-Datei herunterladen",
+        data=angebot_bytes,
+        file_name=f"angebot_{name}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
