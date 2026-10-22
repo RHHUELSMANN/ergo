@@ -1,7 +1,60 @@
 
 import streamlit as st
 import tempfile
-from word_styling import export_doc
+from pathlib import Path
+import re
+from docx import Document
+
+TEMPLATE_PATH = Path(__file__).resolve().parent / "angebot.docx"
+
+
+def export_doc(template_path, output_path, daten):
+    """Replace placeholders while retaining paragraph, table and run styling."""
+    doc = Document(str(template_path))
+    if not daten:
+        doc.save(str(output_path))
+        return str(output_path)
+    pattern = re.compile(r"\{(" + "|".join(re.escape(k) for k in sorted(daten, key=len, reverse=True)) + r")\}")
+
+    def replace_paragraph(paragraph):
+        runs = paragraph.runs
+        original = [run.text for run in runs]
+        full_text = "".join(original)
+        positions = [(i, j) for i, value in enumerate(original) for j in range(len(value))]
+        for match in reversed(list(pattern.finditer(full_text))):
+            start, end = match.span()
+            first, left = positions[start]
+            last, right = positions[end - 1]
+            value = str(daten[match.group(1)])
+            if first == last:
+                text = runs[first].text
+                runs[first].text = text[:left] + value + text[right + 1:]
+            else:
+                runs[first].text = runs[first].text[:left] + value
+                for index in range(first + 1, last):
+                    runs[index].text = ""
+                runs[last].text = runs[last].text[right + 1:]
+
+    def replace_table(table):
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    replace_paragraph(paragraph)
+                for nested in cell.tables:
+                    replace_table(nested)
+
+    for paragraph in doc.paragraphs:
+        replace_paragraph(paragraph)
+    for table in doc.tables:
+        replace_table(table)
+    for section in doc.sections:
+        for part in (section.header, section.footer):
+            for paragraph in part.paragraphs:
+                replace_paragraph(paragraph)
+            for table in part.tables:
+                replace_table(table)
+    doc.save(str(output_path))
+    return str(output_path)
 
 def euro_wert(wert):
     return f"{float(wert):,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") + " €"
@@ -41,12 +94,12 @@ def export_word_dokument(name, reisepreis, reise_von, reise_bis, zielgebiet, alt
         "RundumSorglos_Jahres_ohne_SB": euro_wert(rus_jv_ohne),
     }
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        angebot_path = export_doc("angebot.docx", tmp.name, daten)
-        with open(angebot_path, "rb") as f:
-            st.download_button(
-                label="📄 Word-Datei herunterladen",
-                data=f,
-                file_name=f"angebot_{name}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+    with tempfile.TemporaryDirectory() as temp_dir:
+        angebot_path = export_doc(TEMPLATE_PATH, Path(temp_dir) / "angebot.docx", daten)
+        angebot_bytes = Path(angebot_path).read_bytes()
+    st.download_button(
+        label="📄 Word-Datei herunterladen",
+        data=angebot_bytes,
+        file_name=f"angebot_{name}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
