@@ -168,5 +168,4 @@ if "ergebnis_df" in st.session_state:
     st.table(st.session_state["ergebnis_df"])
 
 if "word_data" in st.session_state:
-    if st.button("Angebot als Word-Datei erstellen"):
-        export_word_dokument(**st.session_state["word_data"])
+    export_word_dokument(**st.session_state["word_data"])
